@@ -1,0 +1,593 @@
+---
+title: "PROJECT 4: CREDIT REDUX"
+author: "Eddie McGowan"
+output: html_notebook
+---
+
+# Abstract
+In the provided Projects 2 and 3, the students gave three main critiques:  
+(1) Protected features should not be included in the model's feature selection;  
+(2) The model improperly changes the granularity of the original dataset; and  
+(3) The model has uneven performance across racial groups.  
+
+Based upon these critiques, the following changes were made to Project 4 . First, unnecessary attributes and projected classes were removed, which reduced the potential for bias in the model. Second, columns with range values were converted to ordinal variables. This helped maintain the data granularity of the original dataset Third, to improve fairness, the data was downsampled on race, and the fairness assessment, from Project 2, was re-run. Fairness did not show significant improvements over Project 1. However, the fairness of the model is now transparently shown, so the users can use the model appropriately.  
+
+In the decision tree, debt-to-income ratio, loan-to-value ratio, and loan amount are used as splitting criteria. The model produced highly accurate results with a 90% F1 score, 83% accuracy, 84% precision, and 97% recall.  
+
+The model has an accuracy equity of 0.14, a false positive error rate balance of 0.14, a false negative error rate balance of 0.17, and a recall parity of 0.08.  
+
+## Goal Project 4: Revise Project 1  
+Revise the Project 1 model from DSCI 451 using class learning and other students' critiques provided in Project 2 and Project 3. In addition, create a model card that summarizes the details of the model.  
+
+## Order of Contents
+1. Background for Project 4  
+    + Summary of project 1 (before project 4 edits)  
+    + Other students' responses to my model (Project 2, Project 3, Class Learnings)  
+    + Overview of updates to Project 1  
+2. Model Development  
+    + Step 1: Read the File and Install Packages.  
+    + Step 2: Feature Selection  
+    + Step 3: Data Cleaning  
+    + Step 4: Split Data and Downsample on Race  
+    + Step 5: Decision Tree  
+    + Step 6: Results  
+    + Step 7: Fairness Assessment  
+3. Conclusion and Further Study  
+4. Sources  
+
+### Background for Project 4
+
+#### Summary of Project 1 (Before Project 4 Edits)  
+**Background**: In Project 1, a binary model was created to predict home loan repayment.  Applicants who have been approved in the past are viewed as more likely to repay the loan. Likewise, applicants who have been rejected in the past are viewed as less likely to repay the loan. The model was trained and tested using the 2019 Pennsylvania Home Mortgage Disclosure Act (HMDA) dataset. In this dataset, there is a column called "action_taken" which shows if an application has been accepted (action_taken = 1) or rejected (action_taken = 3) [1,2].  
+
+**Overview** The model utilizes a decision tree. At the end of the model, the decision tree is graphically presented, so the splitting criteria can be easily understood. To create the decision tree, the R package tidymodels were used.  
+
+**Data Selection**: Most columns were considered for the model (88 out of 98). Only columns which are not known at the time of the application were excluded. For example, “purchaser type” describes the entity purchasing the covered loan [1], this is not available until the application is already approved. Likewise, denial_reason is not populated until the application is already denied [1]. In addition, state code was excluded as it contains the same value "PA" (Pennsylvania) for all data points.  
+
+Columns excluded: denial_reason 1-4, lei, hoepa status, purchaser type, initially payable to institution, aus.1, and state_code.  
+
+**Evaluation** The model had an accuracy of 83%, a precision of 82%, a recall of 99%, and a F1 of 90%. True positive is set where both the data shows the application as accepted and the model predicts the application to be accepted. Likewise, the true negative is set where both the data show the application as rejected and the model predicts the application to be rejected.  
+
+**Notes**: Ethical concerns were flagged, but not addressed in Project 1. These concerns are addressed in Project 4.  
+
+---------------------------------------------------------------------------------------------------
+
+#### Responses by other Students'
+
+##### Project 2
+**Note on the Project 2 fairness metrics**. This discussion will affect my fairness calculations later in the model. In the fairness metrics of Project 2, there is a misalignment between the justification and the calculations used, which is caused by how the student assigned true positive, true negative, false positive, and false negative. In Project 2, the student set true positive where the data shows the application as rejected and the model predicts the application to be rejected. Also, the student set true negative where the data shows the application as accepted and the model predicts the application to be accepted. Using this as a starting point, traditionally false positive is set where the model predicts the positive class and the data shows the negative class. For project 2, by convention, a false positive would represent where the model predicts the application to be denied and the data shows the application as accepted. However, the student set this condition as false negative instead of false positive. Switching false negative and false positive will have an impact on false positive error rates, false negative error rates, and predictive parity. These metrics are still important; however, the reasoning for the results needs to be adjusted accordingly.  This adjustment will be discussed in more detail in their particular section.  
+
+Also, Project 1 used opposite values than Project 2 for true positive and true negative. For example, in Project 1, true positive was set as the opposite of true positive in Project 2, where the model predicts the applicant to be approved and the data shows the applicant to be approved. This difference in convention is not an issue. However, because of this difference, performance metrics cannot be compared directly between these two projects without manipulation.  
+
+The provided Project 2 evaluated the Project 1 model using three fairness metrics: accuracy equity, predictive parity, and false positive/false negative error rate balance to analyze the fairness of the model across racial groups. The results are summarized below.   
+
+At the end of this Project 4 model, I show the change in fairness between Project 1 and Project 4 by re-running these fairness metrics.  
+
+**Accuracy Equity**: This metric was chosen to see if the model had a difference in performance across racial groups. The model had a higher accuracy for White and Asian applicants (around 84 percent) than for "2 or more Minority groups", Black, American Indian, and Native Hawaiian applications (between 66 to 72 percent). Accuracy equity is the difference in accuracy between groups. There is an 18 percent difference (84 to 66 percent) in accuracy across racial groups. This large accuracy equity shows a difference in model performance by race and a lack of fairness in the model.  
+
+Accuracy = (True Positive + True Negative)/ (True Positive + True Negative + False Positive + False Negative)  
+
+Accuracy Equity = Max(Accuracy) – Min(Accuracy)  
+
+**Predictive Parity (Recall Parity)**: While Project 2 discussed predictive parity, using the convention discussed at the top of this section, the calculation used is aligned with recall parity. Recall parity was used to see if the model had similar rates of false negatives in race groups. The model had a lower recall for White and Black applicants (between 27 and 28 percent) than for "2 or more Minority groups", American Indian, Asian, and Native Hawaiian applicants (between 37 to 45 percent). Recall parity is the difference in recall between groups. There is an 18 percent difference (45 to 27 percent) in recall across racial groups. This large recall parity shows a difference in model performance by race and a lack of fairness in the model.  
+
+Recall: = (True Positive)/ (True Positive + False Negative)  
+
+Recall Parity = Max(Recall) – Min(Recall)  
+
+**Error Rate Balance**: Using the convention discussed at the top of this section, the false negative and false positive error rate balance values are swapped, but the values are still accurate. This metric was chosen to see if the model’s false positives and false negatives are proportionate across racial groups. The model had a false negative error rate for White and Asian applicants (between 16 and 17 percent). In contrast, the model had a higher false negative error rate for the other racial groups "2 or more Minority groups", Black, American Indian, and Native Hawaiian groups, with a false negative error rate between 34 to 44 percent.  
+
+Likewise, the model had a false positive error rate for White, Black, Native Hawaiian, and Asian applicants (between 10 and 12 percent). In contrast, the model had a lower false positive error rate for the other racial groups: "2 or more Minority groups" and  American Indians, with a positive error rate between 0 to 2 percent. Error rate balance is the difference in error rate between groups. There is a 28 percent discrepancy (44 to 16 percent) in the false negative error rate and a 12 percent discrepancy (12 to 0 percent) in the false positive error rate shows. This large difference in error rate balance shows a difference in model performance by race and a lack of fairness in the model.  
+
+False Positive Error Rate = (False Positive) / (True Negative + False Positive)  
+False Positive Error Rate Balance = Max(False Positive Error Rate Balance) – Min(False Positive Error Rate Balance)  
+
+False Negative Error Rate = (False Negative) / (True Positive + False Negative)  
+False Negative Error Rate Balance = Max(False Negative Error Rate Balance) – Min(False Negative Error Rate Balance)  
+
+**Uneven Performance Across Racial Groups**: In Project 1, I did not calculate fairness metrics, so the fairness of the model was unknown. Project 2 shows the Project 1 model does not have equal performance across racial groups. Project 2 recommends fixing these issues with fairness by using techniques such as oversampling,  undersampling, or smote to balance the number of applicants by racial group. Undersampling (downsampling) is used in Project 4 to improve fairness, which can be seen in the section "Step 4: Split Data and Downsample on Race"  
+
+##### Project 3
+The provided Project 3 analyzed the fairness in the Project 1 model and mentioned gaps in the Project 1 model where the model can be improved.  
+
+**Remove Protected Attributes**: The Project 1 model considers 88 columns of protected classes including ethnicity, race, and sex. This adds a potential bias to the model, as a protected class can be chosen as a splitting criterion in the decision tree. In the alternative value for Project 3, these protected attributes are removed in addition to other unnecessary columns. In total, 49 columns were removed.  
+
+List of columns removed: denial_reason.1,   denial_reason.2,    denial_reason.3,    denial_reason.4, lei, hoepa_status, purchaser_type, initially_payable_to_institution, aus.1, state_code, derived_ethnicity, derived_race,applicant_ethnicity.1,applicant_ethnicity.2, applicant_ethnicity.3, applicant_ethnicity.4, applicant_ethnicity.5, co.applicant_ethnicity.1, co.applicant_ethnicity.2, co.applicant_ethnicity.3, co.applicant_ethnicity.4, co.applicant_ethnicity.5, applicant_race.1,applicant_race.2, applicant_race.3, applicant_race.4, applicant_race.5, co.applicant_race.1, co.applicant_race.2, co.applicant_race.3, co.applicant_race.4, co.applicant_race.5, applicant_ethnicity_observed, co.applicant_ethnicity_observed, applicant_race_observed, co.applicant_race_observed, applicant_sex_observed, co.applicant_sex_observed, applicant_sex_observed, co.applicant_sex_observed, co.applicant_age_above_62, aus.2, aus.3, aus.4, aus.5, prepayment_penalty_term, intro_rate_period, multifamily_affordable_units, total_points_and_fees.  
+
+Every column that the Project 3 student removed was removed as well in Project 4. Note, in Project 4, additional columns that should not be used were identified and were removed as well. This change was made in the section "Step 2: Feature Selection."  
+
+##### Class Learnings
+**Inaccurate adjustment of granularity** In my Project 2 model, Professor Baumer commented on my data-cleaning techniques. Range values were taken as the average. For example, “30-36” was converted to 33. This allowed the column debt-to-income ratio to be converted to a numeric data type. This technique is inaccurate, as the distribution of data points within these ranges is unknown. Thus, it is inaccurate to increase the granularity of the data. In Project 4, the data-cleaning technique is adjusted by converting these columns to ordinal variables, which helps preserve the original data granularity. This change is made in the section “Step 3: Data Cleaning.”  
+
+#### Updates to Project 1
+Below all the changes between Project 1 and Project 4 are included. Where the change was suggested is included at the beginning of every point. At the end of each point, where the change was implemented is included. The changes are listed in the order they appear in the model.  
+
+1. **(Project 3) Remove Protected Features**: The original model considered 88 of 98 predictive variables to predict "action taken." This includes protected classes such as age, ethnicity, race, and sex. Considering protected classes adds a potential bias to the model, as new data could add protected classes as splits in the decision tree. To fix this issue, all the protected classes were removed from the model. In addition, some columns were identified that came after a loan decision was made (e.g., interest rate), and columns that do not provide details about the applicant (e.g., credit score type). These columns were removed as well. This fixes the critique "Remove Protected Attributes", as the protected attributes were removed. Thus, the potential for bias against protected classes in the model is reduced. This change is made in the section "Step 2: Feature Selection."  
+
+2. **(Class Learnings) Decrease number of Features**: For range values, the original model took the average of the numeric value. For example, 30-36 would be represented as 33. This is inaccurate, as the distribution of data points within this range is unknown. To fix this issue, the relevant columns were converted to ordinal variables, which is an ordered factor data type in R. Ordinal variables are assigned a hierarchy to preserve the granularity of the data. For example, the value 30-36 would be less than 37. This change is made in the section "Step 3: Data Cleaning."  
+
+3. **(Project 2) Downsample on Race** The Project 1 model does not have equal performance across racial groups. Fairness in designing loan prediction models is beneficial to avoid the discriminatory lending practices seen in early American history [3]. To address this issue,  the data is downsampled on derived race, so that each racial group has a similar number of applications in the model creation. Note that to maintain performance, a threshold was set for racial groups making up at least 1% of the population. At the end of the model, the fairness metrics from Project 2 are re-run to see the impact of downsampling the data on model fairness. This addresses the "Uneven Performance Across Racial Groups" data gap raised in Project 2, as each racial group with sufficient records will have the same number of applications in the model creation. Further, fairness is being calculated, so any fairness issues will be known. Downsampling is performed in the section "Step 3: Data Cleaning", and fairness metrics are calculated in the section “Step 6: Fairness Assessment.”  
+
+4. **(General) Remove sections "Find the variable most correlated with action_taken" and "Create a random forest"**: Section "Find the variable most correlated with action_taken" was an exploratory section, which did not produce significant results. In this section, variables that are directly related to action taken (e.g., denial reason) were identified. These variables, should not be used in the model as they are populated after the application is already accepted or rejected. Overall, this section provides little value to the overall model and detracts from the flow of the model. In addition, the section "Create a random forest" was too inefficient and did not produce results. Thus, both these sections are removed from this paper.  
+
+---------------------------------------------------------------------------------------------------
+### Model Development
+#### Step 1: Read the File and install packages
+1. Read the data file of prior Pennsylvania mortgage decisions.  
+2. Install packages tidymodels and caret.  
+
+tidymodels is used to create a decision tree and to calculate precision, recall, and accuracy. Caret is used to downsample on race.  
+
+Note: Most of the fundamental logic in the following coding is from Zybook, which is the textbook used DSCI 310. [4]   
+```{r}
+#install.packages("tidymodels")
+suppressPackageStartupMessages(library(tidymodels))
+
+#install.packages("caret")
+suppressPackageStartupMessages(library(caret))
+
+
+# Loaded the data set.
+loan = read.csv("/Users/eddiemcgowan/Library/Mobile Documents/com~apple~CloudDocs/451/state_PA_actions_taken.csv")
+```
+#### Step 2: Feature selection
+
+Note, that this section had significant changes to incorporate the feedback given during the in-class presentation by the students. Instead of arbitrarily using nine financially viable variables, I removed columns that were related to protected classes or unnecessary.  This change was made to address the student’s question "How did you choose the columns for the Project 4 model?" and Professor Baumer's question "How did you determine which columns count as a financially viable variable?". Excluding irrelevant variables is a better approach than arbitrarily choosing perceived important variables. The excluded columns are explained in detail below.  
+
+To choose the columns to remove for the predictive model, the excluded columns from Project 3 were used as a starting place. In Project 3, protected classes such as age, ethnicity, race, and sex were excluded. Excluding these attributes prevents these attributes from being used as a split in the final decision tree.  
+
+List of columns removed (Project 3): denial_reason.1,   denial_reason.2,    denial_reason.3,    denial_reason.4, lei, hoepa_status, purchaser_type, initially_payable_to_institution, aus.1, state_code, derived_ethnicity, derived_race, applicant_ethnicity.1, applicant_ethnicity.2, applicant_ethnicity.3, applicant_ethnicity.4, applicant_ethnicity.5, co.applicant_ethnicity.1, co.applicant_ethnicity.2, co.applicant_ethnicity.3, co.applicant_ethnicity.4, co.applicant_ethnicity.5, applicant_race.1, applicant_race.2, applicant_race.3, applicant_race.4, applicant_race.5, co.applicant_race.1, co.applicant_race.2, co.applicant_race.3, co.applicant_race.4, co.applicant_race.5, applicant_ethnicity_observed, co.applicant_ethnicity_observed, applicant_race_observed, co.applicant_race_observed, applicant_sex_observed, co.applicant_sex_observed, applicant_sex_observed, co.applicant_sex_observed, co.applicant_age_above_62, aus.2, aus.3, aus.4, aus.5, prepayment_penalty_term, intro_rate_period, multifamily_affordable_units, and total_points_and_fees.  
+
+In addition, other columns were identified from the HDMA documentation which should not be included in the model. The columns and the reason they are excluded are listed below.  
+
+**applicant_credit_score_type and co.applicant_credit_score_type**: This column tells the name and version of the credit scoring model used to generate a credit score for the applicant and co-applicant respectively. [1]. The applicant does not influence the choice of the credit scoring model used to evaluate their application. This column provides no insights about the applicant or the requested loan.  
+
+**applicant_age and co.applicant_age**: This column provides details on the age of the applicant and co-applicant, respectively. As age is a protected class, this column should not be included as a feature in the decision tree.  
+
+**applicant_age_above_62**: This column provides details on whether the applicant is over 62 years old.  As age is a protected class, this column should not be included as a feature in the decision tree.  
+
+**Columns Populated after a Loan Decision is Already Made**: interest_rate, rate_spread, total_loan_costs, origination_charges, discount_points, and lender_credits.  These columns provide no insights about the applicant or the requested loan.  
+
+The remaining columns are cleaned below. These columns will be used in the decision tree in section “Step 5: Decision Tree”. The protected classes stay in the data until the decision tree, so downsampling can occur in “Step 4: split data and Downsample on Race.”  
+
+#### Step 3: Data Cleaning
+View the remaining columns to see if they are of the proper data type. For the columns that are the wrong data type, convert them accordingly. To see what data type each column should be, the HMDA documentation with the column definitions is used [1].  
+
+```{r}
+head(subset(loan, select = -c(
+  #columns removed in Project 1 and Project 3
+  denial_reason.1,   denial_reason.2,    denial_reason.3,    denial_reason.4, lei, hoepa_status, purchaser_type, initially_payable_to_institution, aus.1, state_code, derived_ethnicity, 
+derived_race,applicant_ethnicity.1,applicant_ethnicity.2,applicant_ethnicity.3,applicant_ethnicity.4,applicant_ethnicity.5,co.applicant_ethnicity.1,co.applicant_ethnicity.2,co.applicant_ethnicity.3,co.applicant_ethnicity.4,co.applicant_ethnicity.5,applicant_race.1,applicant_race.2,applicant_race.3,applicant_race.4,applicant_race.5,co.applicant_race.1,co.applicant_race.2,co.applicant_race.3,co.applicant_race.4,co.applicant_race.5,applicant_ethnicity_observed,co.applicant_ethnicity_observed,applicant_race_observed,co.applicant_race_observed,applicant_sex_observed,co.applicant_sex_observed,applicant_sex_observed,co.applicant_sex_observed,co.applicant_age_above_62,aus.2,aus.3,aus.4,aus.5,prepayment_penalty_term,intro_rate_period,multifamily_affordable_units,total_points_and_fees, 
+# New columns added
+interest_rate, rate_spread, total_loan_costs, origination_charges, discount_points, lender_credits, applicant_credit_score_type, co.applicant_credit_score_type, applicant_age, co.applicant_age, applicant_age_above_62)))
+```
+
+**Factor Columns**: The following columns have an integer data type. However, their respective column definitions describe a categorical variable, so each column is converted to a factor data type [1].  
+
+Columns: action_taken, reverse_mortgage, open.end_line_of_credit, derived_loan_product_type, conforming_loan_limit, derived_sex, derived_dwelling_category, lien_status, preapproval   
+```{r}
+loan$action_taken <- as.factor(loan$action_taken)
+loan$reverse_mortgage <- as.factor(loan$reverse_mortgage)
+loan$open.end_line_of_credit <- as.factor(loan$open.end_line_of_credit)
+loan$derived_loan_product_type <- as.factor(loanfiltered$derived_loan_product_type)
+loan$conforming_loan_limit <- as.factor(loan$conforming_loan_limit)
+loan$derived_sex <- as.factor(loanfiltered$derived_sex)
+loan$derived_dwelling_category <- as.factor(loan$derived_dwelling_category)
+loan$lien_status <- factor(loan$lien_status)
+loan$preapproval <- factor(loan$preapproval)
+```
+
+**Debt to Income Ratio**: View all the values in debt-to-income ratio.   
+```{r}
+
+unique(loan$debt_to_income_ratio)
+```
+Exempt does not provide any insight into the application. Exempt is replaced with NA.  
+
+Since the data has ranges, the column will be set up as an ordinal variable. In R, this is an ordered factor data type.  
+```{r}
+loan$debt_to_income_ratio <- na_if(loan$debt_to_income_ratio,'Exempt')
+loan$debt_to_income_ratio <- factor(loan$debt_to_income_ratio, order = TRUE, 
+levels = c("<20%","20%-<30%","30%-<36%","37","38","39","40","41","42","43","44","45","46","47","48","49","50%-60%",">60%","NA"))
+class(loan$debt_to_income_ratio)
+```
+
+**Loan Term**: View all the values in the loan term.  
+```{r}
+# View non-numeric values first
+sort(unique(loan$loan_term), decreasing = TRUE)
+```
+Exempt does not provide any insight into the application. Exempt is replaced with NA.  
+
+Since the data is numeric and the values do not have decimals, it will be converted to an integer data type.  
+```{r}
+loan$loan_term <- na_if(loan$loan_term,'Exempt')
+loan$loan_term <- as.integer(loan$loan_term)
+class(loan$loan_term)
+```
+
+**Loan to Value Ratio**: View all the values in loan-to-value ratio.  
+```{r}
+# View non-numeric values first
+sort(unique(loan$loan_to_value_ratio), decreasing = TRUE)
+```
+Exempt does not provide any insight into the application. Exempt is replaced with NA.  
+
+Since the data is numeric and the values have decimals, it will be converted to a numeric data type.  
+```{r}
+loan$loan_to_value_ratio <- na_if(loan$loan_to_value_ratio,'Exempt')
+loan$loan_to_value_ratio <- as.numeric(loan$loan_to_value_ratio)
+class(loan$loan_to_value_ratio)
+```
+
+**Property Value**: View all the values in property value.  
+```{r}
+class(loan$property_value)
+# View non-numeric values first
+sort(unique(loan$property_value), decreasing = TRUE)
+```
+Exempt does not provide any insight into the application. Exempt is replaced with NA.  
+
+Since the data is numeric and the values do not have decimals, it will be converted to an integer data type.  
+```{r}
+loan$property_value <- na_if(loan$property_value,'Exempt')
+loan$property_value <- as.integer(loan$property_value)
+class(loan$property_value)
+```
+
+**Total Units**: View the data type and all the values in total units.  
+```{r}
+class(loan$total_units)
+unique(loan$total_units)
+```
+Since the data has ranges, the column will be set up as an ordinal variable. In R, this is an ordered factor data type.  
+```{r}
+loan$total_units <- factor(loan$total_units, order = TRUE, 
+levels = c("1","2","3","4","5-24","25-49","50-99","100-149",">149"))
+class(loan$total_units)
+```
+
+#### Step 4: Split Data and Downsample on Race
+The data is split into a training dataset and a testing dataset. The training data is downsampled on race so that each racial group will have the same number of applications in the model creation. Testing data is not altered so the impact of the downsampling on fairness metrics can be assessed.  
+```{r}
+#1. Split the data set into a training set and a testing set.
+split <- initial_split(loan, prop=0.70)
+# Assigned training instances to loan_training_data.
+loan_training_data <- training(split)
+# Assigned testing instances to loan_testing_data.
+loan_testing_data <- testing(split)
+```
+
+The majority of applications in the dataset are from white applicants. As discussed in Project 2, this caused the Project 1 model to have uneven performance between racial groups. To improve fairness and decrease these differences seen between racial groups, the dataset was downsampled. This causes each racial group to have the same number of applications in the training data, so the model’s preferences are not dominated by the majority class (White Applicants).  
+
+Note, that I chose downsampling over upsampling as the data has one peak (White Applicants). Predominantly reducing the record count for one group (White Applicants), preserves a greater percentage of the original data rather than adding data for multiple racial groups.  
+
+In the data, some racial groups (e.g., White Applicants) are larger than other racial groups (e.g., Native Hawaiian). The small racial groups have less than 1000 training records. For example, Native Hawaiian only has 683 records. This record count is too small to accurately determine fairness. To account for this, racial groups with less than 1%* of the training data are filtered out.  
+
+Filtering out these groups will also help maintain the performance of the model. In the dataset, there are six racial groups. Only three of these groups make up at least 1% of the data, which is Asian, Black, and White applicants. Keeping all six racial groups would leave less than 1% of training data available to prepare the model. This would limit the performance of the model.  
+
+Note that Smote was tried as well. However, the performance was better for downsampling, so downsampling was used instead.  
+
+1.	Check the race distribution across the entire dataset (percentage by group).  
+```{r}
+#Convert the column into a table, and see the race distribution by the proportion of the total record count.
+race_count = table(loan_training_data$derived_race)
+sort(prop.table(race_count) * 100)
+race_count
+```
+2.	Plot the record counts for each racial group.  
+```{r}
+#Bar chart of derived_race vs record count
+loan_training_data |>
+  ggplot(aes(x = derived_race)) +
+  geom_bar(aes(fill = derived_race), color = "black") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 0.5))
+```
+3. Filter on racial groups making up at least 1% of the data. This removes "2 or more minority races", "American Indian or Alaska Native", and "Native Hawaiian or Other Pacific Islander". These groups do not have sufficient data needed for a fairness assessment.  
+```{r}
+#Minimum rows for 1% of the data
+min_rows_race <- nrow(loan_training_data)*0.01
+#Threshold check
+Race_above_threshold <- names(race_count[race_count >= min_rows_race])
+
+#Filter
+filtered_data_race <- loan_training_data[loan_training_data$derived_race %in% Race_above_threshold, ]
+```
+4.	Confirm data was filtered.  
+```{r}
+sort(prop.table(table(filtered_data_race$derived_race)) * 100)
+```
+5.	Downsampling on race. In this situation, downsampling is preferable to upsampling, because reducing the record counting of one class (“White”) preserves more of the original data than significantly increasing the mock data for two classes (“Asian” and “Black”).   
+```{r}
+downsample_race <- downSample(filtered_data_race,y =  as.factor(filtered_data_race$derived_race))
+nrow(downsample_race)
+```
+6.	Recheck the race record counts.  
+
+The record count was lowered to around 32,721 records. In the next section, the 41 not-removed variables will be used as predictive variables for the decision tree model. Since the record count is greater than 10 times as large as the number of predictive variables, it is reasonable to proceed with model development.  
+```{r}
+#Bar chart of derived_race vs record count
+downsample_race |>
+  ggplot(aes(x = derived_race)) +
+  geom_bar(aes(fill = derived_race), color = "black")
+```
+
+#### Step 5: Decision Tree
+
+Using the method taught in DSCI 310, I created a decision tree and plotted my results. I chose a decision tree over a logarithmic regression, as it was easier to interpret the results of a decision tree. If an application is denied, the applicant can easily look up the decision tree to find the factors that led to this decision. Therefore, the decision could be helpful if the applicant wanted to adjust their application to have a higher probability of being approved for a loan.  
+
+Background: Decision trees are a classification and regression model used to predict values. Decision trees use the CART (classification and regression tree) algorithm to minimize the Gini index, which is a measure of misclassification. Each split is done to reduce the Gini index. The decision tree will stop splitting if adding a split would increase the Gini index. Or, a decision tree would stop splitting if it hits the maximum number of splits (branches), or if a split would have less than the minimum required data points [4].  
+
+Remove protected classes and unnecessary columns discussed in "Step 2: Feature Selection."  
+```{r}
+downsample_race <- subset(downsample_race, select = -c(
+  #columns removed in Project 1 and Project 3
+  denial_reason.1,   denial_reason.2,    denial_reason.3,    denial_reason.4, lei, hoepa_status, purchaser_type, initially_payable_to_institution, aus.1, state_code, derived_ethnicity, 
+derived_race,applicant_ethnicity.1,applicant_ethnicity.2,applicant_ethnicity.3,applicant_ethnicity.4,applicant_ethnicity.5,co.applicant_ethnicity.1,co.applicant_ethnicity.2,co.applicant_ethnicity.3,co.applicant_ethnicity.4,co.applicant_ethnicity.5,applicant_race.1,applicant_race.2,applicant_race.3,applicant_race.4,applicant_race.5,co.applicant_race.1,co.applicant_race.2,co.applicant_race.3,co.applicant_race.4,co.applicant_race.5,applicant_ethnicity_observed,co.applicant_ethnicity_observed,applicant_race_observed,co.applicant_race_observed,applicant_sex_observed,co.applicant_sex_observed,applicant_sex_observed,co.applicant_sex_observed,co.applicant_age_above_62,aus.2,aus.3,aus.4,aus.5,prepayment_penalty_term,intro_rate_period,multifamily_affordable_units,total_points_and_fees, 
+# New columns added
+interest_rate, rate_spread, total_loan_costs, origination_charges, discount_points, lender_credits, applicant_credit_score_type, co.applicant_credit_score_type, applicant_age, co.applicant_age, applicant_age_above_62))
+```
+
+**Steps taken and justification** [4]
+1.	Created a recipe to set "action taken" as the target column to be predicted. This used the training dataset. This relates "action taken" to the predictive columns.  
+```{r}
+rec <- recipe(action_taken ~ debt_to_income_ratio + income + lien_status + loan_amount + loan_term + loan_to_value_ratio + preapproval + property_value + total_units, downsample_race)
+```
+
+2.  Created a decision tree model with a maximum depth of 5 and a minimum number of entries per tree leg of 100.  
+
+Note that I tried many reasonable combinations of tree depth (3-7) and minimum number of samples (10-500). A tree depth of 5 and a minimum n of 100 were chosen as the results are highly accurate, have a moderate tree depth, and avoid overfitting.  
+```{r}
+tree_species <- decision_tree(
+  mode = "classification", tree_depth = 5, 
+  min_n = 100
+)
+```
+    
+3.  Linked the recipe and the model together in a workflow, which creates a decision tree. Print the decision tree numerically and graphically.  
+```{r}
+# Fitted the data to the workflow.
+fit_tree <- fit(wflow_tree, downsample_race)
+
+# Printed the decision tree numerically.
+fit_tree
+
+# Printed the decision tree graphically.
+fit_tree |> extract_fit_engine() |> 
+  rpart.plot::rpart.plot(roundint=FALSE)
+```
+
+#### Step 6: Results
+Based upon the results from the decision tree, the most important factors for deciding whether a loan should be approved were the "debt-to-income ratio", "loan amount”, and "loan-to-value ratio." These results are intuitive.  Descriptions for each of these columns and splits are provided below.  
+
+**Debt-to-income ratio** is a ratio of the monthly debt the borrower incurs from the mortgage over the borrower's monthly income [1]. This can be seen in the first decision tree split, where a 60% debt-to-income ratio threshold is set. If the application has a debt-to-income ratio above 60% then the application is denied, and if the application is less than or equal to 60% then the application is considered further. Debt-to-income ratio is also seen in the fourth splitting criteria. For applicants applying for a loan under $103,000 and a loan-to-value ratio less than 104, a 49% debt-to-income ratio threshold is set. Relevant applications with a debt-to-income ratio greater than 49% are rejected and relevant applications with a debt-to-income ratio less than or equal to 49% are accepted.  
+
+**Loan amount** is the value of the loan being applied for. This can be seen in the second decision tree split. This split determines the next set of splitting criteria for evaluating the application depending on the size of the loan being applied for.  To be approved by the model, loans greater than $103,000 have higher loan-to-value ratio criteria (less than 105) than loans less than or equal to $103,000 (less than 104).  
+
+**Loan-to-value ratio** is the ratio of the value of the mortgage over the value of the house.  This can be seen in the third decision tree split, where the threshold for this criterion (less than 104 or less than 105) depends on the size of the loan being applied for. In both locations, if the application has a loan-to-value ratio above the threshold, then the application is rejected in the model. If the application is below the threshold, then the application is either accepted (loan amount greater than $103,000) or considered further (loan amount less than $103,000).  
+
+Using the model, predictions were added to the test data, and the accuracy, precision, recall, and f1 score were calculated. The most important of these metrics is F1 as it combines the effects of precision and recall.  
+
+Accuracy = (TP + TN)/ (TP + TN + FN + FP)  
+Precision: (TP)/(TP+FP)  
+Recall: (TP)/ (TP + FN)  
+F1: Precision*Recall  
+
+True positive, true negative, false positive, and false negative from Project 1.  
+**True positive (TP)**: The model predicts the application to be approved (predicted class = 1), and the data shows the application was approved (action taken = 1).   
+**True negative (TN)**: The model predicts the application to be rejected (predicted class = 3), and the data shows the application was rejected (action taken = 3).  
+**False positive (FP)**: The model predicts the application to be approved (predicted class = 1), and the data shows the application was rejected (action taken = 3).   
+**False negative (FN)**: The model predicts the application to be rejected (predicted class = 3), and the data shows the application was approved (action taken = 1).  
+
+Compared to Project 1, Project 4 has the same accuracy and F1 score of 83% and 90%, respectively. A slightly higher precision went from 83% in Project 1 to 84% in Project 4. The recall dropped slightly from 99% in Project 1 to 97% in Project 4. Overall, these results show the Project 4 model can accurately predict the data.  
+```{r}
+loan_aug <- augment(fit_tree, loan_testing_data)
+p <- precision(loan_aug, action_taken, .pred_class)
+r <- recall(loan_aug, action_taken, .pred_class)
+a <- accuracy(loan_aug, truth = action_taken, estimate = .pred_class)
+
+# Precision
+p$.estimate
+# Recall
+r$.estimate
+# Accuracy
+a$.estimate
+# F1
+2* p$.estimate *r$.estimate/(p$.estimate+r$.estimate)
+```
+
+Plot the confusion matrix.
+```{r}
+#8. Confusion matrix
+confMat <- conf_mat(loan_aug, truth = action_taken, estimate = .pred_class)
+# Plot the confusion matrix
+confMat |> autoplot(type = "heatmap")
+confMat$table[1,2]
+```
+#### Step 7: Fairness Assessment
+
+Using the fairness metrics from Project 2, the values are re-run to see the impact of downsampling the data on racial groups. The fairness will be focused on Asian, Black, and White applicants, as these are the only racial groups with sufficient data for comparative fairness analysis (greater than 1% of total data).  
+
+The fairness metrics calculated in this model will be compared against the fairness metrics calculated in Project 2 to see how the changes in the Project 4 model impacted fairness.   
+
+True positive, true negative, false positive, and false negative from Project 2  
+**True positive (TP)**: The model predicts the application to be rejected (predicted class = 3), and the data shows the application was rejected (action taken = 3).   
+**True negative (TN)**: The model predicts the application to be approved (predicted class = 1), and the data shows the application was approved (action taken = 1).  
+**False positive (FP)**: The model predicts the application to be rejected (predicted class = 3), and the data shows the application was approved (action taken = 1).  
+**False negative (FN)**: The model predicts the application to be approved (predicted class = 1), and the data shows the application was rejected (action taken = 3).  
+
+Fairness Metrics:  
+**Accuracy Equity**: This is the difference in accuracy between groups. Ideally, each group should have similar accuracy. If there is a significant difference in accuracy between groups, it can show a lack of fairness in the model. Accuracy analyzes the rate of true positives and true negatives in the dataset. Accuracy equity is the net difference in accuracy between different groups. For the loan prediction model, a large accuracy equity in racial groups means some racial groups have greater accuracy, rate of true positives and true negatives, in loan decisions than other racial groups. So, a member of a less accurate racial group would be more likely to either be improperly approved or rejected.  
+
+Accuracy = (TP + TN)/ (TP + TN + FN + FP)  
+Accuracy Equity = max(accuracy) - min(accuracy)  
+
+**Recall Parity**: This is the difference in recall between groups. Ideally, each group should have a similar recall. If there is a significant difference in recall between groups, it can show a lack of fairness in the model. Recall analyzes the rate of true positives in data, where the data shows a positive outcome (true positive and false negative). Recall parity is the net difference in recall between different groups. For the loan prediction model, a large recall parity in racial groups means that for applications that are shown to be rejected (true positive and false negative), some racial groups are more likely to be predicted rejected (true positive) than other racial groups. So, a member of a racial group with a lower recall would be more likely to be improperly approved.  
+
+Recall: (TP)/ (TP + FN)  
+Recall Parity: max(Recall) - min(Recall)  
+
+Note, the Project 2 fairness metrics discussed predictive parity. However, the calculation the student calculates is "recall parity". Thus, recall parity will be used for the comparison. This is discussed in more detail in section “Project 2.”  
+
+**False Positive and False Negative Error Rate Balance**: Error rate balance compares the false positive and false negative error rates respectively between groups to see if they are similar. For loan prediction, this is important to ensure a particular racial group is not improperly approved (false negative) or denied (false positive) at higher rates than other racial groups.  
+
+False Positive Error Rate: (FP)/(FP+TN)  
+False Positive Error Rate Balance: max(False Positive Error Rate) - min(False Positive Error Rate)  
+False Negative Error Rate: (FN)/(FN+TP)  
+False Negative Error Rate Balance: max(False Negative Error Rate) - min(False Negative Error Rate)  
+
+Note, that in the Project 2 model, false positives and false negatives are swapped. This is discussed in section “Project 2”. Thus, for comparison, the false positive error rate in Project 4 will be compared against the false negative error rate in Project 2.  Likewise, the false negative error rate in Project 4 will be compared against the false positive error rate in Project 2.  
+
+Create a table of accuracy, false positive error rate, false negative error rate, and recall.  
+```{r}
+summarydata =  
+  loan_aug |>
+  filter(derived_race %in% Race_above_threshold) |>
+  group_by(derived_race ) |>
+  summarize(
+  n = n(),
+ Accuracy = (sum(.pred_class == 1 & action_taken == 1)+sum(.pred_class == 3 & action_taken == 3))/n(),
+  False_Positive_Rate = sum(.pred_class == 3 & action_taken == 1)/(sum(.pred_class == 3 & action_taken == 1)+sum(.pred_class == 3 & action_taken == 3)),
+  False_Negative_Rate = sum(.pred_class == 1 & action_taken == 3)/(sum(.pred_class == 1 & action_taken == 3)+sum(.pred_class == 1 & action_taken == 1)),
+Recall = sum(.pred_class == 3 & action_taken == 3)/(sum(.pred_class == 3 & action_taken == 3)+sum(.pred_class == 3 & action_taken == 1)))
+summarydata
+```
+
+Accuracy Equity  
+```{r}
+Accuracy_Equity = max(summarydata$Accuracy) - min(summarydata$Accuracy)
+Accuracy_Equity
+```
+
+False Positive Error Rate Balance  
+```{r}
+False_Positive_Error_Rate_Balance <- max(summarydata$False_Positive_Rate) - min(summarydata$False_Positive_Rate)
+False_Positive_Error_Rate_Balance
+```
+
+False Negative Error Rate Balance  
+```{r}
+False_Negative_Error_Rate_Balance <- max(summarydata$False_Negative_Rate) - min(summarydata$False_Negative_Rate)
+False_Negative_Error_Rate_Balance
+```
+
+Recall Parity  
+```{r}
+Recall_Parity <- max(summarydata$Recall) - min(summarydata$Recall)
+Recall_Parity
+```
+
+Graphical visualization of Project 2 vs. Project 4. In the data frame below, the first values are the fairness metrics from Project 2.  
+
+Note, based on the presentation feedback, I increased the text size of the visualizations below.  
+```{r}
+Fairness_Difference <- data.frame(
+  Model = c("Project 2","Project 4"),
+  Accuracy_Equity = c(0.15, Accuracy_Equity),
+  Recall_Parity = c(0.12,Recall_Parity),
+  False_Positive_Error_Rate_Balance = c(0.03,False_Positive_Error_Rate_Balance),
+  False_Negative_Error_Rate_Balance = c(0.18, False_Negative_Error_Rate_Balance)
+)
+Fairness_Difference
+```
+
+**Difference in Accuracy Equity**:  The accuracy equity improved between Project 2 to Project 4 by a slight amount of 0.01.  
+
+(Project 4) 0.14 - (Project 2) 0.15 = -0.01  
+```{r}
+Fairness_Difference$Accuracy_Equity[2] - Fairness_Difference$Accuracy_Equity[1]
+```
+
+Graphing differences in accuracy equity between Project 2 and Project 4.  
+```{r}
+Fairness_Difference |>
+ggplot(aes(fill=Model, x = Model, y = Accuracy_Equity)) +
+geom_bar(position="dodge", stat="identity")+
+  theme(legend.position="none") +
+xlab("")+ ylab("Accuracy Equity") +
+ggtitle("Accuracy Equity by Project")+
+  theme(plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
+        axis.title.y = element_text(face = "bold",size = 20),
+        axis.text.x = element_text(face = "bold",size = 20),
+        axis.text.y = element_text(size = 20))
+```
+**Difference in Recall Parity**:  The recall parity improved between Project 2 to Project 4 by a slight amount of 0.01.  
+
+(Project 4) 0.11 - (Project 2) 0.12 = -0.01  
+```{r}
+Fairness_Difference$Recall_Parity[2] - Fairness_Difference$Recall_Parity[1]
+```
+
+Graphing differences in recall parity between Project 2 and Project 4.  
+```{r}
+Fairness_Difference |>
+ggplot(aes(fill=Model, x = Model, y = Recall_Parity)) +
+geom_bar(position="dodge", stat="identity")+
+  theme(legend.position="none") +
+xlab("")+ylab("Recall Parity") +
+ggtitle("Recall Parity by Project")+
+  theme(plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
+        axis.title.y = element_text(face = "bold",size = 20),
+        axis.text.x = element_text(face = "bold",size = 20),
+        axis.text.y = element_text(size = 20))
+```
+
+**Difference in False Positive Error Rate Balance**: The false positive error rate balance between Project 2 to Project 4 got worse by 0.08.
+
+(Project 4) 0.11 - (Project 2) 0.03 = 0.08
+```{r}
+Fairness_Difference$False_Positive_Error_Rate_Balance[2] - Fairness_Difference$False_Positive_Error_Rate_Balance[1]
+```
+
+Graphing differences in false positive error rate balance between Project 2 and Project 4.  
+```{r}
+Fairness_Difference |>
+ggplot(aes(fill=Model, x = Model, y = False_Positive_Error_Rate_Balance)) +
+geom_bar(position="dodge", stat="identity")+
+  theme(legend.position="none") +
+xlab("")+ylab("False Positive Error Rate Balance") +
+ggtitle("False Positive Error Rate Balance by Project")+
+  theme(plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
+        axis.title.y = element_text(face = "bold",size = 16),
+        axis.text.x = element_text(face = "bold",size = 20),
+        axis.text.y = element_text(size = 20))
+```
+
+**Difference in False Negative Error Rate Balance**: The false negative error rate balance between Project 2 to Project 4 improved by a slight amount of 0.01.  
+
+(Project 4) 0.18 - (Project 2) 0.17 = 0.01
+```{r}
+Fairness_Difference$False_Negative_Error_Rate_Balance[2] - Fairness_Difference$False_Negative_Error_Rate_Balance[1]
+```
+
+Graphing differences in false negative error rate balance between Project 2 and Project 4  
+```{r}
+Fairness_Difference |>
+ggplot(aes(fill=Model, x = Model, y = False_Negative_Error_Rate_Balance)) +
+geom_bar(position="dodge", stat="identity")+
+  theme(legend.position="none") +
+xlab("")+ylab("False Negative Error Rate Balance") +
+ggtitle("False Negative Error Rate Balance by Project")+
+  theme(plot.title = element_text(face = "bold", size = 20, hjust = 0.5),
+        axis.title.y = element_text(face = "bold",size = 16),
+        axis.text.x = element_text(face = "bold",size = 20),
+        axis.text.y = element_text(size = 20))
+```
+
+Overall, the model did not show a significant improvement in fairness. I tried using different sampling techniques, including smote, but got similar fairness results. Since the fairness issues are still present in the data, the fairness discrepancies by racial group were noted in the model card. This allows the user to be aware of the fairness issues so they can use the model appropriately.  
+
+### Conclusions
+Compared to Project 1, Project 4 had the following changes. First, unnecessary attributes and projected classes were removed, which reduced the potential for bias in the model. Second, columns with range values were converted to ordinal variables. This helped maintain the data granularity of the original dataset. Third, to improve fairness, the data was downsampled on race, and the fairness assessment was re-run. While fairness did not improve, the fairness of the model is now transparently shown so that the users can use the model appropriately.  
+
+In the decision tree debt-to-income ratio, loan-to-value ratio, and loan amount are used as splitting criteria. The model is highly accurate, with a 90% F1 score, 83% accuracy, 84% precision, and 97% recall.  
+
+The model has an accuracy equity of 0.14, a false positive error rate balance of 0.14, a false negative error rate balance of 0.17, and a recall parity of 0.08.  
+
+### Further Study
+With additional data, additional racial groups could be considered for downsampling. 
+
+### Sources 
+1. "Public HMDA - Lar Data Fields." HMDA Documentation, Consumer Financial Protection Bureau 2, 2023, ffiec.cfpb.gov/documentation/publications/loan-level-datasets/lar-data-fields/.   
+2. "Public HMDA - Lar Data Fields." HMDA Data set, Consumer Financial Protection Bureau 2, 2023, <https://drive.google.com/file/d/1SG0NzUkHTGPQ3Hi1KRvqD106AMYG1nPT/view?usp=sharing>  
+3. The History of Lending Discrimination. (2023). Investopedia. https://www.investopedia.com/the-history-of-lending-discrimination-5076948#:~:text=24-,What%20is%20redlining%3F,describe%20Home%20Owners%27%20Loan%20Corp  
+4. Chan, Chris, et al. "DSCI 310: Introduction to Data Science2." Zybooks, 2023, learn.zybooks.com/zybook/LEHIGHDSCI310YariSummer2023.  
