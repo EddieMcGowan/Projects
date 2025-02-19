@@ -1,5 +1,5 @@
 # **Movie Recommendation System & Text-To-Image Model**  
-🚀 **Author:** [Your Name]  
+🚀 **Author:** Eddie McGowan 
 📅 **Last Updated:** February 2025  
 
 ## **Overview**  
